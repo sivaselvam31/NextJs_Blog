@@ -4,13 +4,22 @@ import { z } from "zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../ui/form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { signUp } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 const registerSchema = z
   .object({
-    userName: z.string().min(3, "Enter atleast 3 charecters"),
+    name: z.string().min(3, "Enter atleast 3 charecters"),
     email: z.string().email("Please enter a Valid email!..."),
     password: z.string().min(6, "Password must be atleast 6 characters long"),
     confirmPassword: z
@@ -24,37 +33,56 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-function RegisterForm() {
+interface RegisterFormProps {
+  onSuccess: () => void;
+}
+
+function RegisterForm({ onSuccess }: RegisterFormProps) {
   //Loading state
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      userName: "",
+      name: "",
       email: "",
       password: "",
       confirmPassword: "",
     },
   });
 
-  function handleRegister(values: RegisterFormValues){
-    setIsLoading(true)
+  const handleRegister = async (values: RegisterFormValues) => {
+    setIsLoading(true);
 
     try {
-      console.log(values)
+      const { error } = await signUp.email({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      });
+      if (error) {
+        toast("Failed to create an account. Please try again");
+        return;
+      }
+      toast(
+        "Your account has been created successfully. Please Login with your Registered Email & Password"
+      );
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       console.log(error);
-      
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleRegister)} className="space-y-4">
         <FormField
           control={form.control}
-          name="userName"
+          name="name"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="mb-2">Name</FormLabel>
@@ -110,7 +138,11 @@ function RegisterForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full mt-3 font-semibold" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full mt-3 font-semibold"
+          disabled={isLoading}
+        >
           {isLoading ? "creating account..." : "create account"}
         </Button>
       </form>
