@@ -33,6 +33,7 @@ function LoginForm() {
   //Form initialization using react-hook-form and zod
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    // mode: "onChange",
     defaultValues: {
       email: "",
       password: "",
@@ -43,18 +44,26 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
+      // // ✅ Validation guard (optional but safe)
+      // if (!form.formState.isValid) {
+      //   toast("Please correct the form errors.");
+      //   return;
+      // }
+
       const { error } = await signIn.email({
         email: values.email,
         password: values.password,
         rememberMe: true,
       });
       if (error) {
-        toast("Login Failled!");
+        toast.error("Login Failed!");
+      } else {
+        toast.success("Login Succesfull");
+        router.push("/");
       }
-      toast("Login SuccesFull");
-      router.push("/");
     } catch (error) {
       console.log(error);
+      toast("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +81,7 @@ function LoginForm() {
               <FormControl>
                 <Input type="email" placeholder="Enter your email" {...field} />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />

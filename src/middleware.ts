@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const protectedRoutes = ["/profile", "post/create", "post/edit"];
+const protectedRoutes = ["/profile", "/post/create", "/post/edit"];
 
 export async function middleware(request: NextRequest) {
   const pathName = request.nextUrl.pathname;
