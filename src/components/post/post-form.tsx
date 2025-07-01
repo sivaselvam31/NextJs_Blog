@@ -8,9 +8,10 @@ import { Button } from "../ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
-import { CreatePost } from "@/actions/post-actions";
+import { createPost, updatePost } from "@/actions/post-actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { PostFormProps } from "@/lib/types";
 
 const postSchema = z.object({
   title: z
@@ -26,7 +27,7 @@ const postSchema = z.object({
 
 type PostFormValues = z.infer<typeof postSchema>;
 
-function PostForm(props: PostFormValues) {
+function PostForm({ isEditing, post }: PostFormProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -37,11 +38,18 @@ function PostForm(props: PostFormValues) {
   } = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     // mode: "onChange",
-    defaultValues: {
-      title: "",
-      description: "",
-      content: "",
-    },
+    defaultValues:
+      isEditing && post
+        ? {
+            title: post.title,
+            description: post.description,
+            content: post.content,
+          }
+        : {
+            title: "",
+            description: "",
+            content: "",
+          },
   });
 
   const handleFormSubmit = async (data: PostFormValues) => {
@@ -54,15 +62,23 @@ function PostForm(props: PostFormValues) {
 
         let res;
 
-        res = await CreatePost(formData);
-        console.log(res, "res from api");
+        if (isEditing && post) {
+          res = await updatePost({ postId: post.id, formData });
+        } else {
+          res = await createPost(formData);
+          console.log(res, "res from api");
+        }
 
         if (res.success) {
-          toast.success("Post created successfully");
+          toast.success(
+            isEditing
+              ? "Post updated successfully"
+              : "Post created successfully"
+          );
           router.refresh();
           router.push("/");
-        }else{
-            toast.info(res.message)
+        } else {
+          toast.info(res.message);
         }
       } catch (error) {
         console.log(error);
@@ -112,8 +128,16 @@ function PostForm(props: PostFormValues) {
         )}
       </div>
       <div className="flex justify-end">
-        <Button type="submit" className="w-40" disabled={isPending}>
-          {isPending ? "Creating Post..." : "Create Post"}
+        <Button
+          type="submit"
+          className="w-40 cursor-pointer"
+          disabled={isPending}
+        >
+          {isPending
+            ? "Creating Post..."
+            : isEditing
+              ? "Update Post"
+              : "Create Post"}
         </Button>
       </div>
     </form>
