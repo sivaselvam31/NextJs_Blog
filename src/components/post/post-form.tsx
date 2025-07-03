@@ -63,7 +63,7 @@ function PostForm({ isEditing, post }: PostFormProps) {
         let res;
 
         if (isEditing && post) {
-          res = await updatePost({ postId: post.id, formData });
+          res = await updatePost(post.id, formData);
         } else {
           res = await createPost(formData);
           console.log(res, "res from api");
@@ -134,7 +134,9 @@ function PostForm({ isEditing, post }: PostFormProps) {
           disabled={isPending}
         >
           {isPending
-            ? "Creating Post..."
+            ? isEditing
+              ? "Updating Post..."
+              : "Creating Post..."
             : isEditing
               ? "Update Post"
               : "Create Post"}

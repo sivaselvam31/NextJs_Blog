@@ -3,11 +3,12 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { blogPosts } from "@/lib/db/schema";
+import { DeletePostButtonProps } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { UpdateFormProps } from "@/lib/types";
+
 
 export async function createPost(formData: FormData) {
   try {
@@ -82,7 +83,7 @@ export async function createPost(formData: FormData) {
   }
 }
 
-export async function updatePost({ postId, formData }: UpdateFormProps) {
+export async function updatePost(postId: number, formData: FormData) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -176,6 +177,58 @@ export async function updatePost({ postId, formData }: UpdateFormProps) {
       success: false,
       message:
         error instanceof Error ? error.message : "failed to update post!",
+    };
+  }
+}
+
+export async function deletePost(postId: number) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session || !session.user) {
+      return {
+        success: false,
+        message: " You must be logged in to delete Post!",
+      };
+    }
+
+    //get respected post to delete
+    const postToDelete = await db.query.blogPosts.findFirst({
+      where: eq(blogPosts.id, postId),
+    });
+
+    if (!postToDelete) {
+      return {
+        success: false,
+        message: "The post you are trying to delete does not exist!",
+      };
+    }
+
+    if (postToDelete?.authorId !== session.user.id) {
+      return {
+        success: false,
+        message: "You are not authorized to delete this post!",
+      };
+    }
+
+    //delete the post
+    await db.delete(blogPosts).where(eq(blogPosts.id, postId));
+
+    revalidatePath("/");
+    revalidatePath("/profile");
+
+    return {
+      success: true,
+      message: "Post deleted successfully",
+    };
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "failed to delete post!",
     };
   }
 }
