@@ -6,7 +6,6 @@ import LoginForm from "./login-form";
 import RegisterForm from "./register-form";
 
 function AuthLayout() {
-
   const [activeTab, setActiveTab] = useState("login");
 
   return (
@@ -26,7 +25,7 @@ function AuthLayout() {
             <LoginForm />
           </TabsContent>
           <TabsContent value="register">
-            <RegisterForm />
+            <RegisterForm onSuccess={() => setActiveTab("login")} />
           </TabsContent>
         </Tabs>
       </div>

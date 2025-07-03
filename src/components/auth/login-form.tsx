@@ -4,9 +4,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../ui/form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { signIn } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a Valid email!..."),
@@ -18,29 +28,46 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 function LoginForm() {
   //Loading state
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   //Form initialization using react-hook-form and zod
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    // mode: "onChange",
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
-  const handleLogin = async(values: LoginFormValues) => {
+  const handleLogin = async (values: LoginFormValues) => {
     setIsLoading(true);
 
     try {
-      console.log(values)
-    } catch (error) {
-      console.log(error)
-     }
+      // // ✅ Validation guard (optional but safe)
+      // if (!form.formState.isValid) {
+      //   toast("Please correct the form errors.");
+      //   return;
+      // }
 
-    //  finally{
-    //  setIsLoading(false)
-    // }
-  }
+      const { error } = await signIn.email({
+        email: values.email,
+        password: values.password,
+        rememberMe: true,
+      });
+      if (error) {
+        toast.error("Login Failed!");
+      } else {
+        toast.success("Login Succesfull");
+        router.push("/");
+      }
+    } catch (error) {
+      console.log(error);
+      toast("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -54,6 +81,7 @@ function LoginForm() {
               <FormControl>
                 <Input type="email" placeholder="Enter your email" {...field} />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -75,7 +103,11 @@ function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full mt-3 font-semibold" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full mt-3 font-semibold"
+          disabled={isLoading}
+        >
           {isLoading ? "Logging in..." : "Log in"}
         </Button>
       </form>
